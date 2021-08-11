@@ -37,6 +37,17 @@ func MakeHandler(conn net.Conn) *Handler {
 }
 
 func (h *Handler) Handle() {
+
+	identifier := ReadInt(h.Conn)
+	if identifier != 119812525 {
+		h.Dispose()
+		return
+	}
+	err := WriteInt(util.ProtocolVersion, h.Conn)
+	if err != nil {
+		h.Dispose()
+		return
+	}
 	for {
 		pa, err := ReadPackage(h.Conn, h.PrivateKey)
 		if err != nil {
@@ -80,6 +91,7 @@ func (h *Handler) Handle() {
 			h.User = user
 			h.Status = LOGINED
 			util.DebugMsg("Handler-auth", "Login succ:"+pack.User)
+			WriteResult("Done", h.Conn)
 			continue
 		case 3: //push
 			if h.Status != LOGINED {
@@ -103,6 +115,7 @@ func (h *Handler) Handle() {
 				continue
 			}
 			util.DebugMsg("Handler-pushNoti", "Push succ.")
+			WriteResult("Done", h.Conn)
 			continue
 		case 4: //pull req
 			if h.Status != LOGINED {
@@ -119,6 +132,7 @@ func (h *Handler) Handle() {
 				h.CheckJSONSyntaxErr(err)
 				continue
 			}
+			WriteResult("Done", h.Conn)
 			err = SendNoti(*pack, h, pa.Crypto)
 			if err != nil {
 				util.DebugMsg("Handler-req", err.Error())
@@ -132,6 +146,7 @@ func (h *Handler) Handle() {
 				WriteErr("Not logined", h.Conn)
 				continue
 			}
+			WriteResult("Done", h.Conn)
 			var resp PackReqPrivList
 			resp.Priv = h.User.Priv
 			rsakey := ""
@@ -163,6 +178,7 @@ func (h *Handler) Handle() {
 				continue
 			}
 			util.DebugMsg("Handler-account", "Account operation succ")
+			WriteResult("Done", h.Conn)
 			continue
 		case 8: //request public key
 			err := cry.Getkeys(strconv.Itoa(int(h.HID)))
@@ -182,6 +198,7 @@ func (h *Handler) Handle() {
 				continue
 			}
 			h.PrivateKey = string(privateKey)
+			WriteResult("Done", h.Conn)
 
 			var p0 PackRSAPublicKey
 			p0.PublicKey = string(publicKey)
@@ -203,9 +220,16 @@ func (h *Handler) Dispose() {
 	HandlersLock.Unlock()
 }
 
+func WriteResult(result string, c net.Conn) {
+	var resultp PackResult
+	resultp.Error = ""
+	resultp.Result = result
+	WritePackage(c, resultp, 2, "")
+}
 func WriteErr(err string, c net.Conn) {
-	var errp PackError
-	errp.Err = err
+	var errp PackResult
+	errp.Error = err
+	errp.Result = ""
 	WritePackage(c, errp, 2, "")
 }
 

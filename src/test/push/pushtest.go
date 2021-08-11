@@ -5,6 +5,7 @@ import (
 	"esnd/src/service"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 )
 
@@ -13,6 +14,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = service.WriteInt(119812525, c)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("protocol:" + strconv.Itoa(service.ReadInt(c)))
+
 	var p0 service.PackLogin
 	p0.User = "rockchin"
 	p0.Pass = "000112rock.,."

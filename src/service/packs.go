@@ -10,8 +10,9 @@ type PackLogin struct { //1 client
 	Pass string
 }
 
-type PackError struct { //2 both
-	Err string
+type PackResult struct { //2 both
+	Result string
+	Error  string
 }
 
 type PackNotification struct { //3 client
