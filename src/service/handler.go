@@ -140,7 +140,7 @@ func (h *Handler) Handle() {
 			}
 			WritePackage(h.Conn, resp, 6, rsakey)
 			continue
-		case 7:
+		case 7: //account
 			if h.Status != LOGINED {
 				WriteErr("Not logined", h.Conn)
 				continue
@@ -252,7 +252,7 @@ func AccountOperation(req PackAccountOperation) error {
 		if count >= 1 {
 			return errors.New("account already exist")
 		}
-		_, err := db.DB.Exec("INSERT INTO users (name,mask,priv) VALUES ('" + req.Name + "','" + req.Pass + "','" + req.Priv + "')")
+		_, err := db.DB.Exec("INSERT INTO users (name,mask,priv) VALUES ('" + req.Name + "','" + cry.MD5(req.Pass) + "','" + req.Priv + "')")
 		return err
 	case "remove":
 		count := db.Count("SELECT count(*) FROM users WHERE name='" + req.Name + "'")

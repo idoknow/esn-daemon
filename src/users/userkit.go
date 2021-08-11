@@ -2,6 +2,7 @@ package users
 
 import (
 	"errors"
+	"esnd/src/cry"
 	"esnd/src/db"
 	"strings"
 )
@@ -12,10 +13,10 @@ type User struct {
 	Priv string
 }
 
-func Auth(name string, md5 string) (*User, error) {
+func Auth(name string, pw string) (*User, error) {
 	var u User
 	u.Name = name
-	u.Md5 = md5
+	u.Md5 = cry.MD5(pw)
 	if name != "root" {
 		row := db.DB.QueryRow("SELECT mask,priv FROM users WHERE name='" + name + "'")
 		var mask string
@@ -23,12 +24,12 @@ func Auth(name string, md5 string) (*User, error) {
 		if err != nil {
 			return nil, err
 		}
-		if mask != md5 {
+		if mask != u.Md5 {
 			return nil, errors.New("Auth Failed")
 		}
 		return &u, nil
 	} else {
-		if md5 == db.Cfg.GetAnyway("root.mask", "changeMe") {
+		if pw == db.Cfg.GetAnyway("root.mask", "changeMe") {
 			u.Priv = "account pull push"
 			return &u, nil
 		} else {
