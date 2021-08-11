@@ -216,13 +216,13 @@ func (h *Handler) CheckJSONSyntaxErr(err error) {
 }
 
 func StoreNoti(noti PackNotification, source string) error {
-	_, err := db.DB.Exec("INSERT INTO notis (target,time,title,content,source) values ('" + noti.Target + "','" + noti.Time +
+	_, err := db.DB.Exec("INSERT INTO notis (target,time,title,content,source) values ('," + noti.Target + ",','" + noti.Time +
 		"','" + noti.Title + "','" + noti.Content + "','" + source + "')")
 	return err
 }
 
 func SendNoti(req PackRequest, h *Handler, crypto bool) error {
-	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target='" + h.User.Name + "' OR target='_global_') LIMIT 0," + strconv.Itoa(req.Limit))
+	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target like '%," + h.User.Name + ",%' OR target='_global_') LIMIT 0," + strconv.Itoa(req.Limit))
 	if err != nil {
 		return err
 	}
