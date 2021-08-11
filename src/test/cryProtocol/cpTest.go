@@ -13,8 +13,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	service.WriteInt(119812525, c)
+	service.ReadInt(c)
 	var p0 service.PackReqRSAKey
 	service.WritePackage(c, p0, 8, "")
+
+	service.ReadPackage(c, "")
 
 	p1, err := service.ReadPackage(c, "")
 	if err != nil {

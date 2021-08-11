@@ -44,7 +44,7 @@ func ReadPackage(conn net.Conn, privateKey string) (*Package, error) {
 	}
 	//加密了
 	if p.Crypto {
-		util.DebugMsg("ReadPack", "decrypting")
+		util.DebugMsg("ReadPack", "decrypting:\n"+string(jsonBytes))
 		if privateKey == "" {
 			return nil, errors.New("no private key to decrypt json")
 		}

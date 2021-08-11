@@ -41,8 +41,10 @@ func (h *Handler) Handle() {
 	identifier := ReadInt(h.Conn)
 	if identifier != 119812525 {
 		h.Dispose()
+		util.DebugMsg("Handler-flag", "invalid conn")
 		return
 	}
+	util.DebugMsg("Handler", "writeVersion")
 	err := WriteInt(util.ProtocolVersion, h.Conn)
 	if err != nil {
 		h.Dispose()
@@ -207,7 +209,7 @@ func (h *Handler) Handle() {
 			util.DebugMsg("Handler-respPublicKey", "Send succ")
 			continue
 		default:
-			WriteErr("Protocol Err", h.Conn)
+			WriteErr("Protocol Err"+strconv.Itoa(pa.Code), h.Conn)
 			continue
 		}
 	}

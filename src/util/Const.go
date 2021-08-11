@@ -1,4 +1,4 @@
 package util
 
-const DebugMode = false
+const DebugMode = true
 const ProtocolVersion = 1001

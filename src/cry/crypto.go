@@ -88,9 +88,6 @@ func RSA_decrypter(key string, cipherText []byte) ([]byte, error) {
 		return nil, err
 	}
 	//二次解码完毕，调用解密函数
-	afterDecrypter, err := rsa.DecryptPKCS1v15(rand.Reader, PrivateKey, cipherText)
-	if err != nil {
-		return nil, err
-	}
-	return afterDecrypter, nil
+	return rsa.DecryptPKCS1v15(rand.Reader, PrivateKey, cipherText)
+
 }
