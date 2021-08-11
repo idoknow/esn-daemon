@@ -8,7 +8,7 @@ import (
 )
 
 var HID_INDEX int32 = 0
-var Handles = make(map[int32]*Handler)
+var Handlers = make(map[int32]*Handler)
 
 var HandlersLock sync.Mutex
 
@@ -39,7 +39,7 @@ func (ns *NetService) Accept() {
 		}
 
 		h := MakeHandler(c)
-		Handles[h.HID] = h
+		Handlers[h.HID] = h
 		go h.Handle()
 
 		HandlersLock.Unlock()

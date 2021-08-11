@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"esnd/src/db"
 	"esnd/src/users"
 	"esnd/src/util"
@@ -76,7 +77,7 @@ func (h *Handler) Handle() {
 			h.Status = LOGINED
 			util.DebugMsg("Handler-auth", "Login succ:"+pack.User)
 			continue
-		case 3:
+		case 3: //push
 			if h.Status != LOGINED {
 				WriteErr("Not logined", h.Conn)
 				continue
@@ -99,7 +100,7 @@ func (h *Handler) Handle() {
 			}
 			util.DebugMsg("Handler-pushNoti", "Push succ.")
 			continue
-		case 4:
+		case 4: //pull req
 			if h.Status != LOGINED {
 				WriteErr("Not logined", h.Conn)
 				continue
@@ -121,6 +122,43 @@ func (h *Handler) Handle() {
 				continue
 			}
 			util.DebugMsg("Handler-req", "Response succ")
+			continue
+		case 6: //request priv list
+			if h.Status != LOGINED {
+				WriteErr("Not logined", h.Conn)
+				continue
+			}
+			var resp PackReqPrivList
+			resp.Priv = h.User.Priv
+			WritePackage(h.Conn, resp, 6)
+			continue
+		case 7:
+			if h.Status != LOGINED {
+				WriteErr("Not logined", h.Conn)
+				continue
+			}
+			if !h.User.Can("account") {
+				util.DebugMsg("Handler-account", "permission denied")
+				WriteErr("You do not have account operation priv", h.Conn)
+				continue
+			}
+			pack := &PackAccountOperation{}
+			err := json.Unmarshal([]byte(pa.Json), &pack)
+			if err != nil {
+				h.CheckJSONSyntaxErr(err)
+				continue
+			}
+			err = AccountOperation(*pack)
+			if err != nil {
+				util.DebugMsg("Handler-account", "err:"+err.Error())
+				WriteErr(err.Error(), h.Conn)
+				continue
+			}
+			util.DebugMsg("Handler-account", "Account operation succ")
+			continue
+		default:
+			WriteErr("Protocol Err", h.Conn)
+			continue
 		}
 	}
 }
@@ -128,7 +166,7 @@ func (h *Handler) Handle() {
 func (h *Handler) Dispose() {
 	HandlersLock.Lock()
 	h.Conn.Close()
-	delete(Handles, h.HID)
+	delete(Handlers, h.HID)
 	HandlersLock.Unlock()
 }
 
@@ -151,13 +189,13 @@ func StoreNoti(noti PackNotification, source string) error {
 }
 
 func SendNoti(req PackRequest, h *Handler) error {
-	rows, err := db.DB.Query("SELECT target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target='" + h.User.Name + "' OR target='_global_') LIMIT 0," + strconv.Itoa(req.Limit))
+	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target='" + h.User.Name + "' OR target='_global_') LIMIT 0," + strconv.Itoa(req.Limit))
 	if err != nil {
 		return err
 	}
 	for rows.Next() {
 		var resp PackRespNotification
-		err := rows.Scan(&resp.Target, &resp.Time, &resp.Title, &resp.Content, &resp.Source)
+		err := rows.Scan(&resp.Id, &resp.Target, &resp.Time, &resp.Title, &resp.Content, &resp.Source)
 		util.DebugMsg("Handler-select", "select:"+resp.Target+" "+resp.Content)
 		if err != nil {
 			return err
@@ -166,4 +204,57 @@ func SendNoti(req PackRequest, h *Handler) error {
 		util.DebugMsg("Handler-selectNoti", "Resp succ")
 	}
 	return nil
+}
+func AccountOperation(req PackAccountOperation) error {
+	if req.Name == "root" {
+		return errors.New("cannot operate root account")
+	}
+	switch req.Oper {
+	case "add":
+		count := db.Count("SELECT count(*) FROM users WHERE name='" + req.Name + "'")
+		if count >= 1 {
+			return errors.New("account already exist")
+		}
+		_, err := db.DB.Exec("INSERT INTO users (name,mask,priv) VALUES ('" + req.Name + "','" + req.Pass + "','" + req.Priv + "')")
+		return err
+	case "remove":
+		count := db.Count("SELECT count(*) FROM users WHERE name='" + req.Name + "'")
+		if count < 1 {
+			return errors.New("account not found")
+		}
+
+		row := db.DB.QueryRow("SELECT id FROM users WHERE name='" + req.Name + "'")
+		var id int
+		err := row.Scan(&id)
+		if err != nil {
+			return err
+		}
+		_, err = db.DB.Exec("DELETE FROM users WHERE id=" + strconv.Itoa(id))
+		if err != nil {
+			return err
+		}
+		Kick(req.Kick, req.Name)
+		return nil
+	default:
+		return errors.New("no such operation")
+	}
+}
+func Kick(kick bool, user string) {
+	HandlersLock.Lock()
+	toKick := make(map[int]*Handler)
+	index := 0
+	for _, h := range Handlers {
+		if h.User.Name == user {
+			toKick[index] = h
+			index++
+		}
+	}
+	HandlersLock.Unlock()
+
+	for _, h := range toKick {
+		if h != nil {
+			WriteErr("Account info changed", h.Conn)
+			h.Dispose()
+		}
+	}
 }

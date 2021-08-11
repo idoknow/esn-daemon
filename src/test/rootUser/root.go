@@ -3,11 +3,12 @@ package main
 import (
 	"esnd/src/service"
 	"net"
+	"sync"
 )
 
 func main() {
 	var pa service.PackLogin
-	pa.User = "user0"
+	pa.User = "root"
 	pa.Pass = "changeMe"
 	c, err := net.Dial("tcp", "127.0.0.1:3003")
 	if err != nil {
@@ -15,9 +16,16 @@ func main() {
 	}
 	service.WritePackage(c, pa, 1)
 
-	var p1 service.PackRequest
-	p1.From = 0
-	p1.Limit = 2
+	var p1 service.PackAccountOperation
+	p1.Oper = "remove"
+	p1.Name = "root"
+	p1.Pass = "changeMe"
+	p1.Priv = "account push pull"
+	p1.Kick = true
 
-	service.WritePackage(c, p1, 4)
+	service.WritePackage(c, p1, 7)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	wg.Wait()
 }
