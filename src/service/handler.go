@@ -3,9 +3,11 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"esnd/src/cry"
 	"esnd/src/db"
 	"esnd/src/users"
 	"esnd/src/util"
+	"io/ioutil"
 	"net"
 	"strconv"
 )
@@ -15,6 +17,8 @@ type Handler struct {
 	Conn   net.Conn
 	Status int
 	User   *users.User
+
+	PrivateKey string
 }
 
 const (
@@ -34,7 +38,7 @@ func MakeHandler(conn net.Conn) *Handler {
 
 func (h *Handler) Handle() {
 	for {
-		pa, err := ReadPackage(h.Conn)
+		pa, err := ReadPackage(h.Conn, h.PrivateKey)
 		if err != nil {
 			util.DebugMsg("Handler", "err:While read pack:"+err.Error())
 			h.Dispose()
@@ -115,7 +119,7 @@ func (h *Handler) Handle() {
 				h.CheckJSONSyntaxErr(err)
 				continue
 			}
-			err = SendNoti(*pack, h)
+			err = SendNoti(*pack, h, pa.Crypto)
 			if err != nil {
 				util.DebugMsg("Handler-req", err.Error())
 				WriteErr(err.Error(), h.Conn)
@@ -130,7 +134,11 @@ func (h *Handler) Handle() {
 			}
 			var resp PackReqPrivList
 			resp.Priv = h.User.Priv
-			WritePackage(h.Conn, resp, 6)
+			rsakey := ""
+			if pa.Crypto {
+				rsakey = h.PrivateKey
+			}
+			WritePackage(h.Conn, resp, 6, rsakey)
 			continue
 		case 7:
 			if h.Status != LOGINED {
@@ -156,6 +164,31 @@ func (h *Handler) Handle() {
 			}
 			util.DebugMsg("Handler-account", "Account operation succ")
 			continue
+		case 8: //request public key
+			err := cry.Getkeys(strconv.Itoa(int(h.HID)))
+			if err != nil {
+				WriteErr("Cannot generate keypair", h.Conn)
+				continue
+			}
+
+			publicKey, err := ioutil.ReadFile(".esnd/crypto/public/" + strconv.Itoa(int(h.HID)) + ".pem")
+			if err != nil {
+				WriteErr("Cannot read public key", h.Conn)
+				continue
+			}
+			privateKey, err := ioutil.ReadFile(".esnd/crypto/private/" + strconv.Itoa(int(h.HID)) + ".pem")
+			if err != nil {
+				WriteErr("Cannot read private key", h.Conn)
+				continue
+			}
+			h.PrivateKey = string(privateKey)
+
+			var p0 PackRSAPublicKey
+			p0.PublicKey = string(publicKey)
+
+			WritePackage(h.Conn, p0, 9, "")
+			util.DebugMsg("Handler-respPublicKey", "Send succ")
+			continue
 		default:
 			WriteErr("Protocol Err", h.Conn)
 			continue
@@ -173,7 +206,7 @@ func (h *Handler) Dispose() {
 func WriteErr(err string, c net.Conn) {
 	var errp PackError
 	errp.Err = err
-	WritePackage(c, errp, 2)
+	WritePackage(c, errp, 2, "")
 }
 
 func (h *Handler) CheckJSONSyntaxErr(err error) {
@@ -188,7 +221,7 @@ func StoreNoti(noti PackNotification, source string) error {
 	return err
 }
 
-func SendNoti(req PackRequest, h *Handler) error {
+func SendNoti(req PackRequest, h *Handler, crypto bool) error {
 	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target='" + h.User.Name + "' OR target='_global_') LIMIT 0," + strconv.Itoa(req.Limit))
 	if err != nil {
 		return err
@@ -200,7 +233,11 @@ func SendNoti(req PackRequest, h *Handler) error {
 		if err != nil {
 			return err
 		}
-		WritePackage(h.Conn, resp, 5)
+		rsakey := ""
+		if crypto {
+			rsakey = h.PrivateKey
+		}
+		WritePackage(h.Conn, resp, 5, rsakey)
 		util.DebugMsg("Handler-selectNoti", "Resp succ")
 	}
 	return nil

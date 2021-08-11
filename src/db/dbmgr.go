@@ -75,8 +75,6 @@ func CreateNotiTable() error {
 	return err
 }
 
-/*CREATE TABLE notis (id bigint not null primary key auto_increment,target varchar(255) not null,time varchar(255) not null,title varchar(255) not null,content varchar(1023) not null,source varchar(255) not null
-)*/
 type count struct {
 	count int
 }

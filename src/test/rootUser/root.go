@@ -14,7 +14,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	service.WritePackage(c, pa, 1)
+	service.WritePackage(c, pa, 1, "")
 
 	var p1 service.PackAccountOperation
 	p1.Oper = "remove"
@@ -23,7 +23,7 @@ func main() {
 	p1.Priv = "account push pull"
 	p1.Kick = true
 
-	service.WritePackage(c, p1, 7)
+	service.WritePackage(c, p1, 7, "")
 
 	var wg sync.WaitGroup
 	wg.Add(1)

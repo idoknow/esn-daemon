@@ -46,3 +46,10 @@ type PackAccountOperation struct { //7 client
 	Priv string
 	Kick bool
 }
+
+type PackReqRSAKey struct { //8 client
+}
+
+type PackRSAPublicKey struct { //9 server
+	PublicKey string
+}

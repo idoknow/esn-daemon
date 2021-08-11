@@ -13,7 +13,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = service.WritePackage(conn, p0, 0)
+	_, err = service.WritePackage(conn, p0, 0, "")
 	if err != nil {
 		panic(err)
 	}
