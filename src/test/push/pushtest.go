@@ -29,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	var p1 service.PackNotification
+	var p1 service.PackPush
 	p1.Target = "soulter,rockchin,root"
 	p1.Content = "TestMessage"
 	p1.Time = time.Now().String()

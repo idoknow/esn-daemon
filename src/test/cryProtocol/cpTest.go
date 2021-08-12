@@ -32,8 +32,8 @@ func main() {
 	fmt.Println("key:" + p2.PublicKey)
 
 	var p3 service.PackLogin
-	p3.User = "root"
-	p3.Pass = "changeMe"
+	p3.User = "fuckyou"
+	p3.Pass = "fuckyou"
 	_, err = service.WritePackage(c, p3, 1, p2.PublicKey)
 	if err != nil {
 		panic(err)

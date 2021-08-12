@@ -71,7 +71,7 @@ func CreateUserTable() error {
 }
 func CreateNotiTable() error {
 	util.SaySub("DB", "Creating notis table")
-	_, err := DB.Exec("CREATE TABLE notis (id bigint not null primary key auto_increment,target varchar(255) not null,time varchar(255) not null,title varchar(255) not null,content varchar(1023) not null,source varchar(255) not null)")
+	_, err := DB.Exec("CREATE TABLE notis (id bigint not null primary key auto_increment,target varchar(255) not null,time varchar(255) not null,title varchar(255) not null,content varchar(1023) not null,source varchar(255) not null,token varchar(255) not null)")
 	return err
 }
 
@@ -80,6 +80,8 @@ type count struct {
 }
 
 func Count(query string) int {
+	util.DebugMsg("count", "Count:"+query)
+
 	var c count
 	row := DB.QueryRow(query)
 
