@@ -76,6 +76,13 @@ func main() {
 	}
 	Cfg = cfg
 	util.SaySub("Main", "Config file loaded.")
+
+	util.DebugMode, err = strconv.ParseBool(cfg.GetAnyway("debug.enable", "false"))
+	if err != nil {
+		util.SaySub("Main", "Config: debug.enable is not a bool")
+	}
+	util.SaySub("Main", "debugMode="+strconv.FormatBool(util.DebugMode))
+
 	err = db.Init(Cfg)
 	if err != nil {
 		panic(err)
