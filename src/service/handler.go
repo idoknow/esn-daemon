@@ -70,6 +70,7 @@ func (h *Handler) Handle() {
 			err := json.Unmarshal([]byte(pa.Json), &pack)
 			if err != nil {
 				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
 				continue
 			}
 			util.DebugMsg("Handler", "PackTest:0:  int:"+strconv.Itoa(pack.Integer)+" msg:"+pack.Msg)
@@ -79,6 +80,7 @@ func (h *Handler) Handle() {
 			err := json.Unmarshal([]byte(pa.Json), &pack)
 			if err != nil {
 				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
 				continue
 			}
 			if h.Status != ESTABLISHED {
@@ -102,6 +104,7 @@ func (h *Handler) Handle() {
 			err := json.Unmarshal([]byte(pa.Json), &pack)
 			if err != nil {
 				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
 				continue
 			}
 			if h.Status != LOGINED {
@@ -131,6 +134,7 @@ func (h *Handler) Handle() {
 			err := json.Unmarshal([]byte(pa.Json), &pack)
 			if err != nil {
 				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
 				continue
 			}
 			if h.Status != LOGINED {
@@ -157,6 +161,7 @@ func (h *Handler) Handle() {
 			err := json.Unmarshal([]byte(pa.Json), &pack)
 			if err != nil {
 				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
 				continue
 			}
 
@@ -179,6 +184,7 @@ func (h *Handler) Handle() {
 			err := json.Unmarshal([]byte(pa.Json), &pack)
 			if err != nil {
 				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
 				continue
 			}
 			if h.Status != LOGINED {
@@ -207,6 +213,7 @@ func (h *Handler) Handle() {
 			err := json.Unmarshal([]byte(pa.Json), &pack)
 			if err != nil {
 				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
 				continue
 			}
 
