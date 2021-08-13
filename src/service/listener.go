@@ -20,7 +20,7 @@ type NetService struct {
 func MakeNS(port int) (*NetService, error) {
 	var ns NetService
 	ns.Port = port
-	lsn, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(port))
+	lsn, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
 	}
