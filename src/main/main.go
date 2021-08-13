@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"esnd/src/db"
 	"esnd/src/service"
 	"esnd/src/util"
@@ -46,7 +47,7 @@ func main() {
 			//create
 			util.Sayln(configDefault)
 
-			err = os.WriteFile("config/esnd.conf", []byte(configDefault), os.ModePerm)
+			err = WriteFile("config/esnd.conf", configDefault)
 
 			if err != nil {
 				util.SaySub("Main", "Cannot create config file")
@@ -101,6 +102,19 @@ func main() {
 
 	wg.Add(1)
 	wg.Wait()
+}
+
+func WriteFile(name string, str string) error {
+	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	write := bufio.NewWriter(file)
+	write.WriteString(str)
+	write.Flush()
+	return nil
 }
 
 func PathExists(path string) (bool, error) {
