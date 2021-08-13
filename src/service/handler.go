@@ -40,6 +40,7 @@ func MakeHandler(conn net.Conn) *Handler {
 func (h *Handler) Handle() {
 
 	identifier := ReadInt(h.Conn)
+	util.DebugMsg("READ", "ReadPack From:"+h.Conn.RemoteAddr().String())
 	if identifier != 119812525 {
 		h.Dispose()
 		util.DebugMsg("Handler-flag", "invalid conn")
@@ -257,6 +258,7 @@ func WriteResult(result string, c net.Conn, token string) {
 	WritePackage(c, resultp, 2, "")
 }
 func WriteErr(err string, c net.Conn, token string) {
+	util.DebugMsg("ERR", "err:"+err)
 	var errp PackResult
 	errp.Error = err
 	errp.Result = ""
