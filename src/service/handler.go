@@ -74,6 +74,7 @@ func (h *Handler) Handle() {
 				continue
 			}
 			util.DebugMsg("Handler", "PackTest:0:  int:"+strconv.Itoa(pack.Integer)+" msg:"+pack.Msg)
+			WriteResult("Done", h.Conn, pack.Token)
 			continue
 		case 1: //login
 			pack := &PackLogin{}
