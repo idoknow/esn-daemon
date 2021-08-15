@@ -291,7 +291,7 @@ func StoreNoti(noti PackPush, source string) (int, error) {
 }
 
 func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
-	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target like '%," + h.User.Name + ",%' OR target='_global_') LIMIT 0," + strconv.Itoa(req.Limit))
+	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target like '%," + h.User.Name + ",%' OR target like '%,_global_,%') LIMIT 0," + strconv.Itoa(req.Limit))
 	if err != nil {
 		return err
 	}
