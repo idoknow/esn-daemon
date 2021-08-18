@@ -328,8 +328,8 @@ func PushToTarget(pack PackPush, id int, source string) {
 	send.Source = source
 	send.Token = pack.Token
 	for _, h := range Handlers {
-		if strings.Contains(pack.Target, ",_global_,") ||
-			strings.Contains(pack.Target, ","+h.User.Name+",") {
+		if strings.Contains(send.Target, ",_global_,") ||
+			strings.Contains(send.Target, ","+h.User.Name+",") {
 			WritePackage(h.Conn, send, 5, "")
 		}
 	}
