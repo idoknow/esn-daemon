@@ -316,14 +316,14 @@ func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
 func PushToTarget(pack PackPush, id int, source string) {
 	var send PackRespNotification
 	send.Id = id
-	send.Target = pack.Target
+	send.Target = "," + pack.Target + ","
 	send.Time = pack.Time
 	send.Title = pack.Title
 	send.Content = pack.Content
 	send.Source = source
 	send.Token = pack.Token
 	for _, h := range Handlers {
-		if strings.Contains(pack.Target, "_global_") || strings.Contains(pack.Target, h.User.Name) {
+		if strings.Contains(pack.Target, ",_global_,") || strings.Contains(pack.Target, ","+h.User.Name+",") {
 			WritePackage(h.Conn, send, 5, "")
 		}
 	}
