@@ -18,6 +18,9 @@ func Auth(name string, pw string) (*User, error) {
 	u.Name = name
 	u.Md5 = cry.MD5(pw)
 	if name != "root" {
+		if db.Count("SELECT count(*) FROM users WHERE name='"+name+"'") < 1 {
+			return nil, errors.New("Auth Failed")
+		}
 		row := db.DB.QueryRow("SELECT mask,priv FROM users WHERE name='" + name + "'")
 		var mask string
 		err := row.Scan(&mask, &u.Priv)
@@ -33,7 +36,7 @@ func Auth(name string, pw string) (*User, error) {
 			u.Priv = "account pull push"
 			return &u, nil
 		} else {
-			return nil, errors.New("Auth failed")
+			return nil, errors.New("root Auth Failed")
 		}
 	}
 }

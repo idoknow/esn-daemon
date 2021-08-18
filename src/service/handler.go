@@ -39,6 +39,11 @@ func MakeHandler(conn net.Conn) *Handler {
 
 func (h *Handler) Handle() {
 
+	h.User = &users.User{}
+	h.User.Name = ""
+	h.User.Md5 = ""
+	h.User.Priv = ""
+
 	identifier := ReadInt(h.Conn)
 	util.DebugMsg("READ", "ReadPack From:"+h.Conn.RemoteAddr().String())
 	if identifier != 119812525 {
@@ -323,7 +328,8 @@ func PushToTarget(pack PackPush, id int, source string) {
 	send.Source = source
 	send.Token = pack.Token
 	for _, h := range Handlers {
-		if strings.Contains(pack.Target, ",_global_,") || strings.Contains(pack.Target, ","+h.User.Name+",") {
+		if strings.Contains(pack.Target, ",_global_,") ||
+			strings.Contains(pack.Target, ","+h.User.Name+",") {
 			WritePackage(h.Conn, send, 5, "")
 		}
 	}
