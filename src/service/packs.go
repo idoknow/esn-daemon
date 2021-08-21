@@ -64,3 +64,8 @@ type PackRSAPublicKey struct { //9 server
 	PublicKey string
 	Token     string
 }
+
+type PackReqRecent struct { //10 client
+	Limit int
+	Token string
+}

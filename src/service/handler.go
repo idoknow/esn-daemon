@@ -249,6 +249,32 @@ func (h *Handler) Handle() {
 			WritePackage(h.Conn, p0, 9, "")
 			util.DebugMsg("Handler-respPublicKey", "Send succ")
 			continue
+		case 10: //req recent
+			pack := &PackReqRecent{}
+			err := json.Unmarshal([]byte(pa.Json), &pack)
+			if err != nil {
+				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
+				continue
+			}
+			if h.Status != LOGINED {
+				WriteErr("Not logined", h.Conn, pack.Token)
+				continue
+			}
+			if !h.User.Can("pull") {
+				WriteErr("You do not have pull priv", h.Conn, pack.Token)
+				continue
+			}
+			WriteResult("Done", h.Conn, pack.Token)
+
+			err = SendRecent(*pack, h, false, pack.Token)
+			if err != nil {
+				util.DebugMsg("Handler-req-recent", err.Error())
+				WriteErr(err.Error(), h.Conn, pack.Token)
+				continue
+			}
+			util.DebugMsg("Handler-req-recent", "Resp succ")
+			continue
 		default:
 			WriteErr("Protocol Err"+strconv.Itoa(pa.Code), h.Conn, "ErrorPackage")
 			continue
@@ -313,6 +339,40 @@ func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
 			rsakey = h.PrivateKey
 		}
 		WritePackage(h.Conn, resp, 5, rsakey)
+		util.DebugMsg("Handler-selectNoti", "Resp succ")
+	}
+	return nil
+}
+
+func SendRecent(req PackReqRecent, h *Handler, crypto bool, token string) error {
+	count := db.Count("SELECT count(*) FROM notis ORDER BY id DESC LIMIT 0," + strconv.Itoa(req.Limit))
+
+	if count == 0 {
+		return nil
+	}
+	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis ORDER BY id DESC LIMIT 0," + strconv.Itoa(req.Limit))
+	if err != nil {
+		return err
+	}
+	desc := make([]PackRespNotification, count)
+	index := 0
+	for rows.Next() {
+		var resp PackRespNotification
+		err := rows.Scan(&resp.Id, &resp.Target, &resp.Time, &resp.Title, &resp.Content, &resp.Source)
+		resp.Token = token
+		util.DebugMsg("Handler-select", "select:"+resp.Target+" "+resp.Content)
+		if err != nil {
+			return err
+		}
+		desc[index] = resp
+		index++
+	}
+	for i := count - 1; i >= 0; i-- {
+		rsakey := ""
+		if crypto {
+			rsakey = h.PrivateKey
+		}
+		WritePackage(h.Conn, desc[i], 5, rsakey)
 		util.DebugMsg("Handler-selectNoti", "Resp succ")
 	}
 	return nil
