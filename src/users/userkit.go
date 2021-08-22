@@ -4,6 +4,7 @@ import (
 	"errors"
 	"esnd/src/cry"
 	"esnd/src/db"
+	"regexp"
 	"strings"
 )
 
@@ -14,6 +15,12 @@ type User struct {
 }
 
 func Auth(name string, pw string) (*User, error) {
+
+	reg, _ := regexp.Compile("^[0-9a-zA-Z_]{1,}$")
+	if !reg.MatchString(name) {
+		return nil, errors.New("invalid user name")
+	}
+
 	var u User
 	u.Name = name
 	u.Md5 = cry.MD5(pw)

@@ -9,6 +9,7 @@ import (
 	"esnd/src/util"
 	"io/ioutil"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -312,8 +313,8 @@ func (h *Handler) CheckJSONSyntaxErr(err error) {
 }
 
 func StoreNoti(noti PackPush, source string) (int, error) {
-	_, err := db.DB.Exec("INSERT INTO notis (target,time,title,content,source,token) values ('," + noti.Target + ",','" + noti.Time +
-		"','" + noti.Title + "','" + noti.Content + "','" + source + "','" + noti.Token + "')")
+	_, err := db.DB.Exec("INSERT INTO notis (target,time,title,content,source,token) values ('," + RawToEscape(noti.Target) + ",','" + RawToEscape(noti.Time) +
+		"','" + RawToEscape(noti.Title) + "','" + RawToEscape(noti.Content) + "','" + RawToEscape(source) + "','" + RawToEscape(noti.Token) + "')")
 	if err != nil {
 		return -1, err
 	}
@@ -321,8 +322,12 @@ func StoreNoti(noti PackPush, source string) (int, error) {
 	return id, nil
 }
 
+func RawToEscape(raw string) string {
+	return strings.ReplaceAll(raw, "'", "\\'")
+}
+
 func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
-	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target like '%," + h.User.Name + ",%' OR target like '%,_global_,%') LIMIT 0," + strconv.Itoa(req.Limit))
+	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target like '%," + RawToEscape(h.User.Name) + ",%' OR target like '%,_global_,%') LIMIT 0," + strconv.Itoa(req.Limit))
 	if err != nil {
 		return err
 	}
@@ -399,13 +404,17 @@ func AccountOperation(req PackAccountOperation) error {
 	if req.Name == "root" {
 		return errors.New("cannot operate root account")
 	}
+	reg, _ := regexp.Compile("^[0-9a-zA-Z_]{1,}$")
+	if !reg.MatchString(req.Name) {
+		return errors.New("invalid user name")
+	}
 	switch req.Oper {
 	case "add":
 		count := db.Count("SELECT count(*) FROM users WHERE name='" + req.Name + "'")
 		if count >= 1 {
 			return errors.New("account already exist")
 		}
-		_, err := db.DB.Exec("INSERT INTO users (name,mask,priv) VALUES ('" + req.Name + "','" + cry.MD5(req.Pass) + "','" + req.Priv + "')")
+		_, err := db.DB.Exec("INSERT INTO users (name,mask,priv) VALUES ('" + req.Name + "','" + cry.MD5(req.Pass) + "','" + RawToEscape(req.Priv) + "')")
 		return err
 	case "remove":
 		count := db.Count("SELECT count(*) FROM users WHERE name='" + req.Name + "'")
