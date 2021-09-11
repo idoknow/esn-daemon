@@ -396,10 +396,14 @@ func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
 }
 
 func SendRecent(req PackReqRecent, h *Handler, crypto bool, token string) error {
-	count := db.Count("SELECT count(*) FROM notis ORDER BY id DESC LIMIT 0," + strconv.Itoa(req.Limit))
+
+	count := db.Count("SELECT count(*) FROM notis ORDER BY id DESC")
 
 	if count == 0 {
 		return nil
+	}
+	if count > req.Limit {
+		count = req.Limit
 	}
 	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis ORDER BY id DESC LIMIT 0," + strconv.Itoa(req.Limit))
 	if err != nil {
