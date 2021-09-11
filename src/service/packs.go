@@ -28,6 +28,7 @@ type PackPush struct { //3 client
 
 type PackRequest struct { //4 client
 	From  int
+	To    int
 	Limit int
 	Token string
 }
@@ -68,4 +69,14 @@ type PackRSAPublicKey struct { //9 server
 type PackReqRecent struct { //10 client
 	Limit int
 	Token string
+}
+
+type PackCount struct { //11 client
+	From  int
+	To    int
+	Token string
+}
+type PackRespCount struct { //12 server
+	Amount int
+	Token  string
 }

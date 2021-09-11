@@ -276,6 +276,45 @@ func (h *Handler) Handle() {
 			}
 			util.DebugMsg("Handler-req-recent", "Resp succ")
 			continue
+		case 11: //count notifications amount
+			pack := &PackCount{}
+			err := json.Unmarshal([]byte(pa.Json), &pack)
+			if err != nil {
+				h.CheckJSONSyntaxErr(err)
+				h.Dispose()
+				continue
+			}
+
+			if h.Status != LOGINED {
+				WriteErr("Not logined", h.Conn, pack.Token)
+				continue
+			}
+			if !h.User.Can("pull") {
+				WriteErr("You do not have pull priv", h.Conn, pack.Token)
+				continue
+			}
+
+			WriteResult("Done", h.Conn, pack.Token)
+
+			//pack resp package
+
+			to := 2147483647
+			if pack.To != 0 {
+				to = pack.To
+			}
+
+			var p0 PackRespCount
+			p0.Amount = db.Count("SELECT count(*) FROM notis WHERE id>=" + strconv.Itoa(pack.From) +
+				" AND id<=" + strconv.Itoa(to) + " AND (target like '%," + RawToEscape(h.User.Name) +
+				",%' OR target like '%,_global_,%')")
+			p0.Token = pack.Token
+			WritePackage(h.Conn, p0, 12, "")
+			util.DebugMsg("Handler-count", "SELECT count(*) FROM notis WHERE id>="+strconv.Itoa(pack.From)+
+				" AND id<="+strconv.Itoa(to)+" AND (target like '%,"+RawToEscape(h.User.Name)+
+				",%' OR target like '%,_global_,%')")
+			util.DebugMsg("Handler-count", "Result:"+strconv.Itoa(p0.Amount))
+
+			continue
 		default:
 			WriteErr("Protocol Err"+strconv.Itoa(pa.Code), h.Conn, "ErrorPackage")
 			continue
@@ -327,7 +366,14 @@ func RawToEscape(raw string) string {
 }
 
 func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
-	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) + " AND (target like '%," + RawToEscape(h.User.Name) + ",%' OR target like '%,_global_,%') LIMIT 0," + strconv.Itoa(req.Limit))
+	to := 2147483647
+
+	if req.To != 0 {
+		to = req.To
+	}
+	rows, err := db.DB.Query("SELECT id,target,time,title,content,source FROM notis WHERE id>=" + strconv.Itoa(req.From) +
+		" AND id<=" + strconv.Itoa(to) + " AND (target like '%," + RawToEscape(h.User.Name) +
+		",%' OR target like '%,_global_,%') LIMIT 0," + strconv.Itoa(req.Limit))
 	if err != nil {
 		return err
 	}
