@@ -27,6 +27,7 @@ db.database=esnd
 root.mask=changeMe`
 
 func main() {
+	util.SaySub("Main", "Protocol Version:"+strconv.Itoa(util.ProtocolVersion))
 	configName := "config/esnd.conf"
 	if len(os.Args) == 1 {
 

@@ -2,4 +2,4 @@ package util
 
 var DebugMode = false
 
-const ProtocolVersion = 1006 //0.8
+const ProtocolVersion = 1100 //0.9
