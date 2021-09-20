@@ -4,7 +4,7 @@
 
 ## Abstract
 
-A light-weight,easy-to-use,cross-platfrom api for programmers to build up a notification system for their own project.  
+A light-weight,easy-to-use,cross-platfrom api for programmers to build up a notification system for their own projects.  
 
 ### Account
 Users can add account through API and grant `account`(account operation) `push`(push notifications) `pull`(pull notifications) permissions.  
@@ -14,7 +14,7 @@ Users can add account through API and grant `account`(account operation) `push`(
 
 Each notification has its own `ID` `Title` `Content` `Time` `Target` `Source` fileds.  
 Set `Target` to select specific user to receive this notification,or set `Target` to `_global_` to send this notification to all users.  
-Programs can pull notifications sent to specific account through API.
+Programs can pull notifications sent to specific account through APIs.
 
 ### Interacting
 
@@ -46,7 +46,7 @@ If you don't want to use pre-build files,you can install golang on your device a
 
 ## Install
 
-Here are the steps to guide you to configure esn-daemon for your own project.
+Here are the steps to guide you to configure esn-daemon for your own projects.
 
 ### Requirements
 
