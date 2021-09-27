@@ -157,7 +157,7 @@ func (h *Handler) Handle() {
 			err = SendNoti(*pack, h, pa.Crypto, pack.Token)
 			if err != nil {
 				util.DebugMsg("Handler-req", err.Error())
-				WriteErr(err.Error(), h.Conn, pack.Token)
+				WriteErr(err.Error(), h.Conn, pack.Token+"-1") //*
 				continue
 			}
 			util.DebugMsg("Handler-req", "Response succ")
@@ -179,7 +179,7 @@ func (h *Handler) Handle() {
 			WriteResult("Done", h.Conn, pack.Token)
 			var resp PackReqPrivList
 			resp.Priv = h.User.Priv
-			resp.Token = pack.Token
+			resp.Token = pack.Token + "-1" //*
 			rsakey := ""
 			if pa.Crypto {
 				rsakey = h.PrivateKey
@@ -245,7 +245,7 @@ func (h *Handler) Handle() {
 
 			var p0 PackRSAPublicKey
 			p0.PublicKey = string(publicKey)
-			p0.Token = pack.Token
+			p0.Token = pack.Token + "-1" //*
 
 			WritePackage(h.Conn, p0, 9, "")
 			util.DebugMsg("Handler-respPublicKey", "Send succ")
@@ -307,7 +307,7 @@ func (h *Handler) Handle() {
 			p0.Amount = db.Count("SELECT count(*) FROM notis WHERE id>=" + strconv.Itoa(pack.From) +
 				" AND id<=" + strconv.Itoa(to) + " AND (target like '%," + RawToEscape(h.User.Name) +
 				",%' OR target like '%,_global_,%')")
-			p0.Token = pack.Token
+			p0.Token = pack.Token + "-1" //*
 			WritePackage(h.Conn, p0, 12, "")
 			util.DebugMsg("Handler-count", "SELECT count(*) FROM notis WHERE id>="+strconv.Itoa(pack.From)+
 				" AND id<="+strconv.Itoa(to)+" AND (target like '%,"+RawToEscape(h.User.Name)+
@@ -377,10 +377,12 @@ func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
 	if err != nil {
 		return err
 	}
+	index := 1
 	for rows.Next() {
 		var resp PackRespNotification
 		err := rows.Scan(&resp.Id, &resp.Target, &resp.Time, &resp.Title, &resp.Content, &resp.Source)
-		resp.Token = token
+		resp.Token = token + "-" + strconv.Itoa(index) //*
+		index++
 		util.DebugMsg("Handler-select", "select:"+resp.Target+" "+resp.Content)
 		if err != nil {
 			return err
@@ -414,7 +416,7 @@ func SendRecent(req PackReqRecent, h *Handler, crypto bool, token string) error 
 	for rows.Next() {
 		var resp PackRespNotification
 		err := rows.Scan(&resp.Id, &resp.Target, &resp.Time, &resp.Title, &resp.Content, &resp.Source)
-		resp.Token = token
+		resp.Token = token + "-" + strconv.Itoa(index+1)
 		util.DebugMsg("Handler-select", "select:"+resp.Target+" "+resp.Content)
 		if err != nil {
 			return err
