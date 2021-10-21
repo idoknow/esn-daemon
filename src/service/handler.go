@@ -70,6 +70,7 @@ func (h *Handler) Handle() {
 			h.Dispose()
 			break
 		}
+		util.DebugMsg("recvJson", "#####"+pa.Json)
 		switch pa.Code {
 		case 0: //test
 			pack := &PackTest{}
@@ -271,7 +272,7 @@ func (h *Handler) Handle() {
 			err = SendRecent(*pack, h, false, pack.Token)
 			if err != nil {
 				util.DebugMsg("Handler-req-recent", err.Error())
-				WriteErr(err.Error(), h.Conn, pack.Token)
+				WriteErr(err.Error(), h.Conn, pack.Token+"-1") //*
 				continue
 			}
 			util.DebugMsg("Handler-req-recent", "Resp succ")
