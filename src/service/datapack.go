@@ -7,6 +7,7 @@ import (
 	"esnd/src/cry"
 	"esnd/src/util"
 	"net"
+	"strconv"
 )
 
 func WriteInt(n int, conn net.Conn) error {
@@ -36,6 +37,9 @@ func ReadPackage(conn net.Conn, privateKey string) (*Package, error) {
 	var p Package
 	p.Code = ReadInt(conn)
 	p.Size = ReadInt(conn)
+	if p.Size > 65536 {
+		return nil, errors.New("package is too big(" + strconv.Itoa(p.Size) + ",while max length is 65536 bytes")
+	}
 	p.Crypto = ReadInt(conn) == 1
 	jsonBytes := make([]byte, p.Size)
 	_, err := conn.Read(jsonBytes)
