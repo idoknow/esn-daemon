@@ -49,7 +49,7 @@ func (h *Handler) Handle() {
 	util.DebugMsg("READ", "ReadPack From:"+h.Conn.RemoteAddr().String())
 	if identifier != 119812525 {
 		h.Dispose()
-		util.DebugMsg("Handler-flag", "invalid conn:"+strconv.Itoa(identifier))
+		util.DebugMsg("Handler-flag", "invalid conn:"+strconv.Itoa(identifier)+" from:"+h.Conn.RemoteAddr().String())
 		return
 	}
 	util.DebugMsg("Handler", "writeVersion")

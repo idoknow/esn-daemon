@@ -16,6 +16,7 @@ var wg sync.WaitGroup
 
 var configDefault = `[server]
 service.port=3003
+log.enable=true
 
 [mysql]
 db.user=esnd
@@ -78,6 +79,11 @@ func main() {
 	}
 	Cfg = cfg
 	util.SaySub("Main", "Config file loaded.")
+
+	if Cfg.GetAnyway("log.enable", "false") == "true" {
+		util.EnableLog = true
+		util.SaySub("Main", "See log in esnd.log.")
+	}
 
 	util.DebugMode, err = strconv.ParseBool(cfg.GetAnyway("debug.enable", "false"))
 	if err != nil {
