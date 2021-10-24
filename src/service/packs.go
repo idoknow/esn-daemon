@@ -19,11 +19,12 @@ type PackResult struct { //2 both
 }
 
 type PackPush struct { //3 client
-	Target  string
-	Time    string
-	Title   string
-	Content string
-	Token   string
+	Target   string
+	Time     string
+	Title    string
+	Content  string
+	Token    string
+	Realtime bool
 }
 
 type PackRequest struct { //4 client

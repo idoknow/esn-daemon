@@ -123,11 +123,19 @@ func (h *Handler) Handle() {
 				WriteErr("You do not have push priv", h.Conn, pack.Token)
 				continue
 			}
-			id, err := StoreNoti(*pack, h.User.Name)
-			if err != nil {
-				util.DebugMsg("Handler-pushNoti", err.Error())
-				WriteErr(err.Error(), h.Conn, pack.Token)
-				continue
+
+			/*default(real-time) id is -1
+			,if this is not a rel-time notif,the id will be determined by database*/
+			id := -1
+
+			util.DebugMsg("Recv", "Real-time:"+strconv.FormatBool(pack.Realtime))
+			if !pack.Realtime {
+				id, err = StoreNoti(*pack, h.User.Name)
+				if err != nil {
+					util.DebugMsg("Handler-pushNoti", err.Error())
+					WriteErr(err.Error(), h.Conn, pack.Token)
+					continue
+				}
 			}
 
 			util.DebugMsg("Handler-pushNoti", "Push succ.")
