@@ -30,6 +30,7 @@
 | esn-daemon | 处理由其他程序通过API发起的连接 | <https://github.com/EasyNotification/esn-daemon> |
 | esn-api-golang | 为Golang构建的用于连接daemon的函数库 | <https://github.com/EasyNotification/esn-api-golang>
 | esn-api-java | 为Java构建的用于连接daemon的类库 | <https://github.com/EasyNotification/esn-api-java> |
+| esn-api-python | 为Python构建的用于连接daemon的库 | <https://github.com/EasyNotification/esn-api-python> |
 | esn-terminal-swing | 使用esn-api-java构建的用于管理daemon的账户和消息的终端 | <https://github.com/EasyNotification/esn-terminal-swing> |
 | esn-terminal-android | 运行于Android平台上的终端 | <https://github.com/Soulter/esn-terminal-android> |
 

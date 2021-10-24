@@ -27,8 +27,9 @@ Users can also use `Terminal` we published to interact with esn-daemon.
 | unit | function | repo |  
 | :----- | :----- | :----- |
 | esn-daemon | Handle connections from api | <https://github.com/EasyNotification/esn-daemon> |
-| esn-api-golang | API for golang projects to connect to esn-daemon | <https://github.com/EasyNotification/esn-api-golang>
-| esn-api-java | API for java projects to connect to esn-daemon | <https://github.com/EasyNotification/esn-api-java> |
+| esn-api-golang | API for Golang projects to connect to esn-daemon | <https://github.com/EasyNotification/esn-api-golang>
+| esn-api-java | API for Java projects to connect to esn-daemon | <https://github.com/EasyNotification/esn-api-java> |
+| esn-api-python | API for Python projects to connect to esn-daemon | <https://github.com/EasyNotification/esn-api-python> |
 | esn-terminal-swing | Made with esn-api-java,for users to manage notifications or accounts | <https://github.com/EasyNotification/esn-terminal-swing> |
 | esn-terminal-android | A terminal for Android platform | <https://github.com/Soulter/esn-terminal-android> |
 
