@@ -23,6 +23,7 @@ type Handler struct {
 	PrivateKey string
 }
 
+//status of handler
 const (
 	ESTABLISHED = iota
 	LOGINED
