@@ -1,5 +1,9 @@
 package service
 
+type IDataPackage interface {
+	Process(h *Handler, p *Package) error
+}
+
 type PackTest struct { //0 both
 	Integer int
 	Msg     string

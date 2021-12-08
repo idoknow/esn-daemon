@@ -7,7 +7,6 @@ import (
 	"esnd/src/db"
 	"esnd/src/users"
 	"esnd/src/util"
-	"io/ioutil"
 	"net"
 	"regexp"
 	"strconv"
@@ -72,263 +71,43 @@ func (h *Handler) Handle() {
 			break
 		}
 		util.DebugMsg("recvJson", "#####"+pa.Json)
+
+		//Parse json
+		//Check code
+		var pack IDataPackage
+
 		switch pa.Code {
 		case 0: //test
-			pack := &PackTest{}
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-			util.DebugMsg("Handler", "PackTest:0:  int:"+strconv.Itoa(pack.Integer)+" msg:"+pack.Msg)
-			WriteResult("Done", h.Conn, pack.Token)
-			continue
+			pack = &PackTest{}
 		case 1: //login
-			pack := &PackLogin{}
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-			if h.Status != ESTABLISHED {
-				WriteErr("Cannot login", h.Conn, pack.Token)
-				continue
-			}
-			user, err := users.Auth(pack.User, pack.Pass)
-			if err != nil {
-				util.DebugMsg("Handler-auth", "err:"+err.Error())
-				WriteErr("Login failed:"+err.Error(), h.Conn, pack.Token)
-				h.Dispose()
-				continue
-			}
-			h.User = user
-			h.Status = LOGINED
-			util.DebugMsg("Handler-auth", "Login succ:"+pack.User)
-			WriteResult("Done", h.Conn, pack.Token)
-			continue
+			pack = &PackLogin{}
 		case 3: //push
-			pack := &PackPush{}
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-			if h.Status != LOGINED {
-				WriteErr("Not logined", h.Conn, pack.Token)
-				continue
-			}
-			if !h.User.Can("push") {
-				WriteErr("You do not have push priv", h.Conn, pack.Token)
-				continue
-			}
-
-			/*default(real-time) id is -1
-			,if this is not a rel-time notif,the id will be determined by database*/
-			id := -1
-
-			util.DebugMsg("Recv", "Real-time:"+strconv.FormatBool(pack.Realtime))
-			if !pack.Realtime {
-				id, err = StoreNoti(*pack, h.User.Name)
-				if err != nil {
-					util.DebugMsg("Handler-pushNoti", err.Error())
-					WriteErr(err.Error(), h.Conn, pack.Token)
-					continue
-				}
-			}
-
-			util.DebugMsg("Handler-pushNoti", "Push succ.")
-			WriteResult("Done", h.Conn, pack.Token)
-			util.SaySub("Handler", "Push:source:"+h.User.Name+" target:"+pack.Target+" title:"+pack.Title)
-
-			go PushToTarget(*pack, id, h.User.Name)
-
-			continue
+			pack = &PackPush{}
 		case 4: //pull req
-			pack := &PackRequest{}
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-			if h.Status != LOGINED {
-				WriteErr("Not logined", h.Conn, pack.Token)
-				continue
-			}
-			if !h.User.Can("pull") {
-				WriteErr("You do not have pull priv", h.Conn, pack.Token)
-				continue
-			}
-			WriteResult("Done", h.Conn, pack.Token)
-
-			err = SendNoti(*pack, h, pa.Crypto, pack.Token)
-			if err != nil {
-				util.DebugMsg("Handler-req", err.Error())
-				WriteErr(err.Error(), h.Conn, pack.Token+"-1") //*
-				continue
-			}
-			util.DebugMsg("Handler-req", "Response succ")
-			continue
+			pack = &PackRequest{}
 		case 6: //request priv list
-			pack := &PackReqPrivList{}
-
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-
-			if h.Status != LOGINED {
-				WriteErr("Not logined", h.Conn, pack.Token)
-				continue
-			}
-			WriteResult("Done", h.Conn, pack.Token)
-			var resp PackReqPrivList
-			resp.Priv = h.User.Priv
-			resp.Token = pack.Token + "-1" //*
-			rsakey := ""
-			if pa.Crypto {
-				rsakey = h.PrivateKey
-			}
-			WritePackage(h.Conn, resp, 6, rsakey)
-			continue
+			pack = &PackReqPrivList{}
 		case 7: //account
-			pack := &PackAccountOperation{}
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-			if h.Status != LOGINED {
-				WriteErr("Not logined", h.Conn, pack.Token)
-				continue
-			}
-			if !h.User.Can("account") {
-				util.DebugMsg("Handler-account", "permission denied")
-				WriteErr("You do not have account operation priv", h.Conn, pack.Token)
-				continue
-			}
-			err = AccountOperation(*pack)
-			if err != nil {
-				util.DebugMsg("Handler-account", "err:"+err.Error())
-				WriteErr(err.Error(), h.Conn, pack.Token)
-				continue
-			}
-			util.DebugMsg("Handler-account", "Account operation succ")
-			WriteResult("Done", h.Conn, pack.Token)
-
-			util.SaySub("Handler", "Account Oper:subject:"+h.User.Name+" object.name:"+pack.Name+" oper:"+pack.Oper)
-
-			continue
+			pack = &PackAccountOperation{}
 		case 8: //request public key
-			pack := &PackReqRSAKey{}
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-
-			err = cry.Getkeys(strconv.Itoa(int(h.HID)))
-			if err != nil {
-				WriteErr("Cannot generate keypair", h.Conn, pack.Token)
-				continue
-			}
-
-			publicKey, err := ioutil.ReadFile(".esnd/crypto/public/" + strconv.Itoa(int(h.HID)) + ".pem")
-			if err != nil {
-				WriteErr("Cannot read public key", h.Conn, pack.Token)
-				continue
-			}
-			privateKey, err := ioutil.ReadFile(".esnd/crypto/private/" + strconv.Itoa(int(h.HID)) + ".pem")
-			if err != nil {
-				WriteErr("Cannot read private key", h.Conn, pack.Token)
-				continue
-			}
-			h.PrivateKey = string(privateKey)
-			WriteResult("Done", h.Conn, pack.Token)
-
-			var p0 PackRSAPublicKey
-			p0.PublicKey = string(publicKey)
-			p0.Token = pack.Token + "-1" //*
-
-			WritePackage(h.Conn, p0, 9, "")
-			util.DebugMsg("Handler-respPublicKey", "Send succ")
-			continue
+			pack = &PackReqRSAKey{}
 		case 10: //req recent
-			pack := &PackReqRecent{}
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-			if h.Status != LOGINED {
-				WriteErr("Not logined", h.Conn, pack.Token)
-				continue
-			}
-			if !h.User.Can("pull") {
-				WriteErr("You do not have pull priv", h.Conn, pack.Token)
-				continue
-			}
-			WriteResult("Done", h.Conn, pack.Token)
-
-			err = SendRecent(*pack, h, false, pack.Token)
-			if err != nil {
-				util.DebugMsg("Handler-req-recent", err.Error())
-				WriteErr(err.Error(), h.Conn, pack.Token+"-1") //*
-				continue
-			}
-			util.DebugMsg("Handler-req-recent", "Resp succ")
-			continue
+			pack = &PackReqRecent{}
 		case 11: //count notifications amount
-			pack := &PackCount{}
-			err := json.Unmarshal([]byte(pa.Json), &pack)
-			if err != nil {
-				h.CheckJSONSyntaxErr(err)
-				h.Dispose()
-				continue
-			}
-
-			if h.Status != LOGINED {
-				WriteErr("Not logined", h.Conn, pack.Token)
-				continue
-			}
-			if !h.User.Can("pull") {
-				WriteErr("You do not have pull priv", h.Conn, pack.Token)
-				continue
-			}
-
-			WriteResult("Done", h.Conn, pack.Token)
-
-			//pack resp package
-
-			to := 2147483647
-			if pack.To != 0 {
-				to = pack.To
-			}
-
-			var p0 PackRespCount
-			p0.Amount = db.Count("SELECT count(*) FROM notis WHERE id>=" + strconv.Itoa(pack.From) +
-				" AND id<=" + strconv.Itoa(to) + " AND (target like '%," + RawToEscape(h.User.Name) +
-				",%' OR target like '%,_global_,%')")
-			p0.Token = pack.Token + "-1" //*
-			WritePackage(h.Conn, p0, 12, "")
-			util.DebugMsg("Handler-count", "SELECT count(*) FROM notis WHERE id>="+strconv.Itoa(pack.From)+
-				" AND id<="+strconv.Itoa(to)+" AND (target like '%,"+RawToEscape(h.User.Name)+
-				",%' OR target like '%,_global_,%')")
-			util.DebugMsg("Handler-count", "Result:"+strconv.Itoa(p0.Amount))
-
-			continue
+			pack = &PackCount{}
 		default:
 			WriteErr("Protocol Err"+strconv.Itoa(pa.Code), h.Conn, "ErrorPackage")
 			continue
 		}
+		//unmarshall
+		err = json.Unmarshal([]byte(pa.Json), &pack)
+		if err != nil {
+			h.CheckJSONSyntaxErr(err)
+			h.Dispose()
+			continue
+		}
+		//process
+		_ = pack.Process(h, pa) //TODO ignore error here because error msg will be sent to client in Process()
 	}
 }
 
