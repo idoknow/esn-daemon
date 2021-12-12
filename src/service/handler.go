@@ -15,6 +15,7 @@ import (
 
 type Handler struct {
 	HID    int32
+	IO     IPackageIO
 	Conn   net.Conn
 	Status int
 	User   *users.User

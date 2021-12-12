@@ -75,7 +75,7 @@ func WritePackage(conn net.Conn, obj interface{}, code int, rsakey string) (*Pac
 	p.Code = code
 	p.Crypto = rsakey != ""
 	dataByte := []byte(json)
-	//加密
+	//encryption
 	if p.Crypto {
 		en, err := cry.RSA_encrypter(rsakey, dataByte)
 		if err != nil {
