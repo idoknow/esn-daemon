@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"esnd/src/cry"
@@ -12,41 +12,41 @@ import (
 //Process packages from peer client
 
 //PackTest
-func (pack *PackTest) Process(h *Handler, p *Package) error {
+func (pack *PackTest) Process(h *Handler, p *NetPackage) error {
 	util.DebugMsg("Handler", "PackTest:0:  int:"+strconv.Itoa(pack.Integer)+" msg:"+pack.Msg)
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 	return nil
 }
 
 //PackLogin
-func (pack *PackLogin) Process(h *Handler, p *Package) error {
+func (pack *PackLogin) Process(h *Handler, p *NetPackage) error {
 	if h.Status != ESTABLISHED {
-		WriteErr("Cannot login", h.Conn, pack.Token)
+		WriteErr("Cannot login", h, pack.Token)
 		return nil
 	}
 	user, err := users.Auth(pack.User, pack.Pass)
 	if err != nil {
 		util.DebugMsg("Handler-auth", "err:"+err.Error())
-		WriteErr("Login failed:"+err.Error(), h.Conn, pack.Token)
+		WriteErr("Login failed:"+err.Error(), h, pack.Token)
 		h.Dispose()
 		return nil
 	}
 	h.User = user
 	h.Status = LOGINED
 	util.DebugMsg("Handler-auth", "Login succ:"+pack.User)
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 	return nil
 }
 
 //PackPush
-func (pack *PackPush) Process(h *Handler, p *Package) error {
+func (pack *PackPush) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
-		WriteErr("Not logined", h.Conn, pack.Token)
+		WriteErr("Not logined", h, pack.Token)
 		return nil
 	}
 	if !h.User.Can("push") {
-		WriteErr("You do not have push priv", h.Conn, pack.Token)
+		WriteErr("You do not have push priv", h, pack.Token)
 		return nil
 	}
 
@@ -60,13 +60,13 @@ func (pack *PackPush) Process(h *Handler, p *Package) error {
 		id, err = StoreNoti(*pack, h.User.Name)
 		if err != nil {
 			util.DebugMsg("Handler-pushNoti", err.Error())
-			WriteErr(err.Error(), h.Conn, pack.Token)
+			WriteErr(err.Error(), h, pack.Token)
 			return nil
 		}
 	}
 
 	util.DebugMsg("Handler-pushNoti", "Push succ.")
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 	util.SaySub("Handler", "Push:source:"+h.User.Name+" target:"+pack.Target+" title:"+pack.Title)
 
 	go PushToTarget(*pack, id, h.User.Name)
@@ -74,22 +74,22 @@ func (pack *PackPush) Process(h *Handler, p *Package) error {
 }
 
 //PackRequest
-func (pack *PackRequest) Process(h *Handler, p *Package) error {
+func (pack *PackRequest) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
-		WriteErr("Not logined", h.Conn, pack.Token)
+		WriteErr("Not logined", h, pack.Token)
 		return nil
 	}
 	if !h.User.Can("pull") {
-		WriteErr("You do not have pull priv", h.Conn, pack.Token)
+		WriteErr("You do not have pull priv", h, pack.Token)
 		return nil
 	}
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 
 	err := SendNoti(*pack, h, p.Crypto, pack.Token)
 	if err != nil {
 		util.DebugMsg("Handler-req", err.Error())
-		WriteErr(err.Error(), h.Conn, pack.Token+"-1") //*
+		WriteErr(err.Error(), h, pack.Token+"-1") //*
 		return nil
 	}
 	util.DebugMsg("Handler-req", "Response succ")
@@ -97,43 +97,39 @@ func (pack *PackRequest) Process(h *Handler, p *Package) error {
 }
 
 //PackReqPrivList
-func (pack *PackReqPrivList) Process(h *Handler, p *Package) error {
+func (pack *PackReqPrivList) Process(h *Handler, p *NetPackage) error {
 	if h.Status != LOGINED {
-		WriteErr("Not logined", h.Conn, pack.Token)
+		WriteErr("Not logined", h, pack.Token)
 		return nil
 	}
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 	var resp PackReqPrivList
 	resp.Priv = h.User.Priv
 	resp.Token = pack.Token + "-1" //*
-	rsakey := ""
-	if p.Crypto {
-		rsakey = h.PrivateKey
-	}
-	WritePackage(h.Conn, resp, 6, rsakey)
+	h.Adapter.Write(resp, 6)
 	return nil
 }
 
 //PackAccountOperation
-func (pack *PackAccountOperation) Process(h *Handler, p *Package) error {
+func (pack *PackAccountOperation) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
-		WriteErr("Not logined", h.Conn, pack.Token)
+		WriteErr("Not logined", h, pack.Token)
 		return nil
 	}
 	if !h.User.Can("account") {
 		util.DebugMsg("Handler-account", "permission denied")
-		WriteErr("You do not have account operation priv", h.Conn, pack.Token)
+		WriteErr("You do not have account operation priv", h, pack.Token)
 		return nil
 	}
 	err := AccountOperation(*pack)
 	if err != nil {
 		util.DebugMsg("Handler-account", "err:"+err.Error())
-		WriteErr(err.Error(), h.Conn, pack.Token)
+		WriteErr(err.Error(), h, pack.Token)
 		return nil
 	}
 	util.DebugMsg("Handler-account", "Account operation succ")
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 
 	util.SaySub("Handler", "Account Oper:subject:"+h.User.Name+" object.name:"+pack.Name+" oper:"+pack.Oper)
 
@@ -141,52 +137,52 @@ func (pack *PackAccountOperation) Process(h *Handler, p *Package) error {
 }
 
 //PackReqRSAKey
-func (pack *PackReqRSAKey) Process(h *Handler, p *Package) error {
+func (pack *PackReqRSAKey) Process(h *Handler, p *NetPackage) error {
 	err := cry.Getkeys(strconv.Itoa(int(h.HID)))
 	if err != nil {
-		WriteErr("Cannot generate keypair", h.Conn, pack.Token)
+		WriteErr("Cannot generate keypair", h, pack.Token)
 		return nil
 	}
 
 	publicKey, err := ioutil.ReadFile(".esnd/crypto/public/" + strconv.Itoa(int(h.HID)) + ".pem")
 	if err != nil {
-		WriteErr("Cannot read public key", h.Conn, pack.Token)
+		WriteErr("Cannot read public key", h, pack.Token)
 		return nil
 	}
 	privateKey, err := ioutil.ReadFile(".esnd/crypto/private/" + strconv.Itoa(int(h.HID)) + ".pem")
 	if err != nil {
-		WriteErr("Cannot read private key", h.Conn, pack.Token)
+		WriteErr("Cannot read private key", h, pack.Token)
 		return nil
 	}
 	h.PrivateKey = string(privateKey)
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 
 	var p0 PackRSAPublicKey
 	p0.PublicKey = string(publicKey)
 	p0.Token = pack.Token + "-1" //*
 
-	WritePackage(h.Conn, p0, 9, "")
+	h.Adapter.Write(p0, 9)
 	util.DebugMsg("Handler-respPublicKey", "Send succ")
 	return nil
 }
 
 //PackReqRecent
-func (pack *PackReqRecent) Process(h *Handler, p *Package) error {
+func (pack *PackReqRecent) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
-		WriteErr("Not logined", h.Conn, pack.Token)
+		WriteErr("Not logined", h, pack.Token)
 		return nil
 	}
 	if !h.User.Can("pull") {
-		WriteErr("You do not have pull priv", h.Conn, pack.Token)
+		WriteErr("You do not have pull priv", h, pack.Token)
 		return nil
 	}
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 
 	err := SendRecent(*pack, h, false, pack.Token)
 	if err != nil {
 		util.DebugMsg("Handler-req-recent", err.Error())
-		WriteErr(err.Error(), h.Conn, pack.Token+"-1") //*
+		WriteErr(err.Error(), h, pack.Token+"-1") //*
 		return nil
 	}
 	util.DebugMsg("Handler-req-recent", "Resp succ")
@@ -194,18 +190,18 @@ func (pack *PackReqRecent) Process(h *Handler, p *Package) error {
 }
 
 //PackCount
-func (pack *PackCount) Process(h *Handler, p *Package) error {
+func (pack *PackCount) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
-		WriteErr("Not logined", h.Conn, pack.Token)
+		WriteErr("Not logined", h, pack.Token)
 		return nil
 	}
 	if !h.User.Can("pull") {
-		WriteErr("You do not have pull priv", h.Conn, pack.Token)
+		WriteErr("You do not have pull priv", h, pack.Token)
 		return nil
 	}
 
-	WriteResult("Done", h.Conn, pack.Token)
+	WriteResult("Done", h, pack.Token)
 
 	//pack resp package
 
@@ -219,7 +215,7 @@ func (pack *PackCount) Process(h *Handler, p *Package) error {
 		" AND id<=" + strconv.Itoa(to) + " AND (target like '%," + RawToEscape(h.User.Name) +
 		",%' OR target like '%,_global_,%')")
 	p0.Token = pack.Token + "-1" //*
-	WritePackage(h.Conn, p0, 12, "")
+	h.Adapter.Write(p0, 12)
 	util.DebugMsg("Handler-count", "SELECT count(*) FROM notis WHERE id>="+strconv.Itoa(pack.From)+
 		" AND id<="+strconv.Itoa(to)+" AND (target like '%,"+RawToEscape(h.User.Name)+
 		",%' OR target like '%,_global_,%')")

@@ -1,146 +1,16 @@
-package service
+package services
 
 import (
-	"encoding/json"
 	"errors"
 	"esnd/src/cry"
 	"esnd/src/db"
-	"esnd/src/users"
 	"esnd/src/util"
-	"net"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-type Handler struct {
-	HID    int32
-	IO     IPackageIO
-	Conn   net.Conn
-	Status int
-	User   *users.User
-
-	PrivateKey string
-}
-
-//status of handler
-const (
-	ESTABLISHED = iota
-	LOGINED
-	KILLED
-)
-
-func MakeHandler(conn net.Conn) *Handler {
-	var h Handler
-	h.HID = HID_INDEX
-	HID_INDEX++
-	h.Conn = conn
-	h.Status = ESTABLISHED
-	return &h
-}
-
-func (h *Handler) Handle() {
-
-	h.User = &users.User{}
-	h.User.Name = ""
-	h.User.Md5 = ""
-	h.User.Priv = ""
-
-	identifier := ReadInt(h.Conn)
-	util.DebugMsg("READ", "ReadPack From:"+h.Conn.RemoteAddr().String())
-	if identifier != 119812525 {
-		h.Dispose()
-		util.DebugMsg("Handler-flag", "invalid conn:"+strconv.Itoa(identifier)+" from:"+h.Conn.RemoteAddr().String())
-		return
-	}
-	util.DebugMsg("Handler", "writeVersion")
-	err := WriteInt(util.ProtocolVersion, h.Conn)
-	if err != nil {
-		h.Dispose()
-		return
-	}
-	for {
-		pa, err := ReadPackage(h.Conn, h.PrivateKey)
-		if err != nil {
-			util.DebugMsg("Handler", "err:While read pack:"+err.Error())
-			h.Dispose()
-			break
-		}
-		if pa == nil {
-			util.DebugMsg("Handler", "err:Pack is nil")
-			h.Dispose()
-			break
-		}
-		util.DebugMsg("recvJson", "#####"+pa.Json)
-
-		//Parse json
-		//Check code
-		var pack IDataPackage
-
-		switch pa.Code {
-		case 0: //test
-			pack = &PackTest{}
-		case 1: //login
-			pack = &PackLogin{}
-		case 3: //push
-			pack = &PackPush{}
-		case 4: //pull req
-			pack = &PackRequest{}
-		case 6: //request priv list
-			pack = &PackReqPrivList{}
-		case 7: //account
-			pack = &PackAccountOperation{}
-		case 8: //request public key
-			pack = &PackReqRSAKey{}
-		case 10: //req recent
-			pack = &PackReqRecent{}
-		case 11: //count notifications amount
-			pack = &PackCount{}
-		default:
-			WriteErr("Protocol Err"+strconv.Itoa(pa.Code), h.Conn, "ErrorPackage")
-			continue
-		}
-		//unmarshall
-		err = json.Unmarshal([]byte(pa.Json), &pack)
-		if err != nil {
-			h.CheckJSONSyntaxErr(err)
-			h.Dispose()
-			continue
-		}
-		//process
-		_ = pack.Process(h, pa) //TODO ignore error here because error msg will be sent to client in Process()
-	}
-}
-
-func (h *Handler) Dispose() {
-	HandlersLock.Lock()
-	h.Conn.Close()
-	delete(Handlers, h.HID)
-	HandlersLock.Unlock()
-}
-
-func WriteResult(result string, c net.Conn, token string) {
-	var resultp PackResult
-	resultp.Error = ""
-	resultp.Result = result
-	resultp.Token = token
-	WritePackage(c, resultp, 2, "")
-}
-func WriteErr(err string, c net.Conn, token string) {
-	util.DebugMsg("ERR", "err:"+err)
-	var errp PackResult
-	errp.Error = err
-	errp.Result = ""
-	errp.Token = token
-	WritePackage(c, errp, 2, "")
-}
-
-func (h *Handler) CheckJSONSyntaxErr(err error) {
-	if err != nil {
-		WriteErr("JSON syntax err", h.Conn, "ErrorPackage")
-	}
-}
-
+//Store a received notification to DB
 func StoreNoti(noti PackPush, source string) (int, error) {
 	_, err := db.DB.Exec("INSERT INTO notis (target,time,title,content,source,token) values ('," + RawToEscape(noti.Target) + ",','" + RawToEscape(noti.Time) +
 		"','" + RawToEscape(noti.Title) + "','" + RawToEscape(noti.Content) + "','" + RawToEscape(source) + "','" + RawToEscape(noti.Token) + "')")
@@ -151,10 +21,12 @@ func StoreNoti(noti PackPush, source string) (int, error) {
 	return id, nil
 }
 
+//Convert raw string to DB friendly string
 func RawToEscape(raw string) string {
 	return strings.ReplaceAll(raw, "'", "\\'")
 }
 
+//Send notification to specific handler
 func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
 	to := 2147483647
 
@@ -177,16 +49,13 @@ func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
 		if err != nil {
 			return err
 		}
-		rsakey := ""
-		if crypto {
-			rsakey = h.PrivateKey
-		}
-		WritePackage(h.Conn, resp, 5, rsakey)
+		h.Adapter.Write(resp, 5)
 		util.DebugMsg("Handler-selectNoti", "Resp succ")
 	}
 	return nil
 }
 
+//Send recent notifications to specific handler
 func SendRecent(req PackReqRecent, h *Handler, crypto bool, token string) error {
 
 	count := db.Count("SELECT count(*) FROM notis ORDER BY id DESC")
@@ -215,16 +84,13 @@ func SendRecent(req PackReqRecent, h *Handler, crypto bool, token string) error 
 		index++
 	}
 	for i := count - 1; i >= 0; i-- {
-		rsakey := ""
-		if crypto {
-			rsakey = h.PrivateKey
-		}
-		WritePackage(h.Conn, desc[i], 5, rsakey)
+		h.Adapter.Write(desc[i], 5)
 		util.DebugMsg("Handler-selectNoti", "Resp succ")
 	}
 	return nil
 }
 
+//Push incomed notification to target handlers
 func PushToTarget(pack PackPush, id int, source string) {
 	var send PackRespNotification
 	send.Id = id
@@ -237,11 +103,12 @@ func PushToTarget(pack PackPush, id int, source string) {
 	for _, h := range Handlers {
 		if strings.Contains(send.Target, ",_global_,") ||
 			strings.Contains(send.Target, ","+h.User.Name+",") {
-			WritePackage(h.Conn, send, 5, "")
+			h.Adapter.Write(send, 5)
 		}
 	}
 }
 
+//Execute account operation
 func AccountOperation(req PackAccountOperation) error {
 	if req.Name == "root" {
 		return errors.New("cannot operate root account")
@@ -294,7 +161,7 @@ func Kick(kick bool, user string) {
 
 	for _, h := range toKick {
 		if h != nil {
-			WriteErr("Account info changed", h.Conn, "LogoutPackage")
+			WriteErr("Account info changed", h, "LogoutPackage")
 			h.Dispose()
 		}
 	}

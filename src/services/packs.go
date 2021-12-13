@@ -1,7 +1,14 @@
-package service
+package services
+
+type NetPackage struct {
+	JSON   string
+	Size   int
+	Code   int
+	Crypto bool
+}
 
 type IDataPackage interface {
-	Process(h *Handler, p *Package) error
+	Process(h *Handler, p *NetPackage) error
 }
 
 type PackTest struct { //0 both

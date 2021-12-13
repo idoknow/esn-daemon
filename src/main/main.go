@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"esnd/src/db"
-	"esnd/src/service"
+	"esnd/src/services/socket"
 	"esnd/src/util"
 	"os"
 	"strconv"
@@ -11,7 +11,7 @@ import (
 )
 
 var Cfg *util.Config
-var Service *service.NetService
+var SocketService *socket.SocketService
 var wg sync.WaitGroup
 
 var configDefault = `[server]
@@ -101,11 +101,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	Service, err = service.MakeNS(port)
+	SocketService, err := socket.MakeService(port)
 	if err != nil {
 		panic(err)
 	}
-	go Service.Accept()
+	go SocketService.Accept()
 
 	wg.Add(1)
 	wg.Wait()
