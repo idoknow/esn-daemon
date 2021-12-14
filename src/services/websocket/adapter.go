@@ -79,7 +79,7 @@ func (wsa *WSAdapter) Read() (*services.NetPackage, error) {
 	np.Size = len([]byte(wsnp.DataPack))
 	np.JSON = wsnp.DataPack
 	if np.Crypto { //unsupported,return err when receive a encrypted package
-		return nil, errors.New("encrypted package is now unsupported.")
+		return nil, errors.New("encrypted package is now unsupported")
 	}
 	return &np, nil
 }

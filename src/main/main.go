@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"esnd/src/db"
 	"esnd/src/services/socket"
+	"esnd/src/services/websocket"
 	"esnd/src/util"
 	"os"
 	"strconv"
@@ -12,10 +13,14 @@ import (
 
 var Cfg *util.Config
 var SocketService *socket.SocketService
+var WSService *websocket.WSService
 var wg sync.WaitGroup
 
 var configDefault = `[server]
-service.port=3003
+socket.enable=true
+socket.port=3003
+websocket.enable=true
+websocket.port=3004
 log.enable=true
 
 [mysql]
@@ -97,15 +102,35 @@ func main() {
 	}
 	util.SaySub("Main", "Database loaded.")
 
-	port, err := strconv.Atoi(Cfg.GetAnyway("service.port", "3003"))
-	if err != nil {
-		panic(err)
+	//load socket service
+	if Cfg.GetAnyway("socket.enable", "false") == "true" {
+		port, err := strconv.Atoi(Cfg.GetAnyway("socket.port", "3003"))
+		if err != nil {
+			panic(err)
+		}
+		ss, err := socket.MakeService(port)
+		if err != nil {
+			panic(err)
+		}
+		SocketService = ss
+		go ss.Accept()
+		util.SaySub("Main", "Socket connections accepting enable:"+strconv.Itoa(port))
 	}
-	SocketService, err := socket.MakeService(port)
-	if err != nil {
-		panic(err)
+
+	//load websocket service
+	if Cfg.GetAnyway("websocket.enable", "false") == "true" {
+		port, err := strconv.Atoi(Cfg.GetAnyway("websocket.port", "3004"))
+		if err != nil {
+			panic(err)
+		}
+		wss, err := websocket.MakeService(port)
+		if err != nil {
+			panic(err)
+		}
+		WSService = wss
+		go WSService.Accept()
+		util.SaySub("Main", "WebSocket connections accepting enable:"+strconv.Itoa(port))
 	}
-	go SocketService.Accept()
 
 	wg.Add(1)
 	wg.Wait()
