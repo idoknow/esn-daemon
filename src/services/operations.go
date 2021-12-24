@@ -23,7 +23,8 @@ func StoreNoti(noti PackPush, source string) (int, error) {
 
 //Convert raw string to DB friendly string
 func RawToEscape(raw string) string {
-	return strings.ReplaceAll(raw, "'", "\\'")
+	s0 := strings.ReplaceAll(raw, "\\", "\\\\")
+	return strings.ReplaceAll(s0, "'", "\\'")
 }
 
 //Send notification to specific handler
