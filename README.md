@@ -4,7 +4,7 @@
 
 ## Abstract
 
-A light-weight,easy-to-use,cross-platfrom api for programmers to build up a notification system for their own projects.  
+A light-weight platform for you to build up a notification system for your own projects.  
 
 ### Account
 Users can add account through API and grant `account`(account operation) `push`(push notifications) `pull`(pull notifications) permissions.  
