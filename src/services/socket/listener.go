@@ -39,7 +39,7 @@ func (ss *SocketService) Accept() {
 	}
 }
 
-//Check connection and do handshaking,if success:call handlerMgr to create handler
+// Check connection and do handshaking,if success:call handlerMgr to create handler
 func makeSocketHandler(c net.Conn) {
 	sa := &SocketAdapter{ //a socket connection
 		&c,

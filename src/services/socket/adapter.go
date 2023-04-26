@@ -14,7 +14,7 @@ type SocketAdapter struct {
 	Conn *net.Conn
 }
 
-//HandShake with income socket connection,return true if no err while handshaking
+// HandShake with income socket connection,return true if no err while handshaking
 func (sa *SocketAdapter) HandShake() (bool, error) {
 	identifier := ReadInt(*sa.Conn)
 	if identifier != 119812525 {
@@ -84,7 +84,7 @@ func (sa *SocketAdapter) Dispose() {
 	_ = (*sa.Conn).Close()
 }
 
-//Convert bytes to int
+// Convert bytes to int
 func ReadInt(conn net.Conn) int {
 	// bytesBuffer := bytes.NewBuffer()
 	var x int32

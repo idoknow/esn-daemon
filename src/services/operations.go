@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-//Store a received notification to DB
+// Store a received notification to DB
 func StoreNoti(noti PackPush, source string) (int, error) {
 	_, err := db.DB.Exec("INSERT INTO notis (target,time,title,content,source,token) values ('," + RawToEscape(noti.Target) + ",','" + RawToEscape(noti.Time) +
 		"','" + RawToEscape(noti.Title) + "','" + RawToEscape(noti.Content) + "','" + RawToEscape(source) + "','" + RawToEscape(noti.Token) + "')")
@@ -21,13 +21,13 @@ func StoreNoti(noti PackPush, source string) (int, error) {
 	return id, nil
 }
 
-//Convert raw string to DB friendly string
+// Convert raw string to DB friendly string
 func RawToEscape(raw string) string {
 	s0 := strings.ReplaceAll(raw, "\\", "\\\\")
 	return strings.ReplaceAll(s0, "'", "\\'")
 }
 
-//Send notification to specific handler
+// Send notification to specific handler
 func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
 	to := 2147483647
 
@@ -56,7 +56,7 @@ func SendNoti(req PackRequest, h *Handler, crypto bool, token string) error {
 	return nil
 }
 
-//Send recent notifications to specific handler
+// Send recent notifications to specific handler
 func SendRecent(req PackReqRecent, h *Handler, crypto bool, token string) error {
 
 	count := db.Count("SELECT count(*) FROM notis ORDER BY id DESC")
@@ -91,7 +91,7 @@ func SendRecent(req PackReqRecent, h *Handler, crypto bool, token string) error 
 	return nil
 }
 
-//Push incomed notification to target handlers
+// Push incomed notification to target handlers
 func PushToTarget(pack PackPush, id int, source string) {
 	var send PackRespNotification
 	send.Id = id
@@ -109,7 +109,7 @@ func PushToTarget(pack PackPush, id int, source string) {
 	}
 }
 
-//Execute account operation
+// Execute account operation
 func AccountOperation(req PackAccountOperation) error {
 	if req.Name == "root" {
 		return errors.New("cannot operate root account")

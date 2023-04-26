@@ -11,14 +11,14 @@ import (
 
 //Process packages from peer client
 
-//PackTest
+// PackTest
 func (pack *PackTest) Process(h *Handler, p *NetPackage) error {
 	util.DebugMsg("Handler", "PackTest:0:  int:"+strconv.Itoa(pack.Integer)+" msg:"+pack.Msg)
 	WriteResult("Done", h, pack.Token)
 	return nil
 }
 
-//PackLogin
+// PackLogin
 func (pack *PackLogin) Process(h *Handler, p *NetPackage) error {
 	if h.Status != ESTABLISHED {
 		WriteErr("Cannot login", h, pack.Token)
@@ -38,7 +38,7 @@ func (pack *PackLogin) Process(h *Handler, p *NetPackage) error {
 	return nil
 }
 
-//PackPush
+// PackPush
 func (pack *PackPush) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
@@ -73,7 +73,7 @@ func (pack *PackPush) Process(h *Handler, p *NetPackage) error {
 	return nil
 }
 
-//PackRequest
+// PackRequest
 func (pack *PackRequest) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
@@ -96,7 +96,7 @@ func (pack *PackRequest) Process(h *Handler, p *NetPackage) error {
 	return nil
 }
 
-//PackReqPrivList
+// PackReqPrivList
 func (pack *PackReqPrivList) Process(h *Handler, p *NetPackage) error {
 	if h.Status != LOGINED {
 		WriteErr("Not logined", h, pack.Token)
@@ -110,7 +110,7 @@ func (pack *PackReqPrivList) Process(h *Handler, p *NetPackage) error {
 	return nil
 }
 
-//PackAccountOperation
+// PackAccountOperation
 func (pack *PackAccountOperation) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
@@ -136,7 +136,7 @@ func (pack *PackAccountOperation) Process(h *Handler, p *NetPackage) error {
 	return nil
 }
 
-//PackReqRSAKey
+// PackReqRSAKey
 func (pack *PackReqRSAKey) Process(h *Handler, p *NetPackage) error {
 	err := cry.Getkeys(strconv.Itoa(int(h.HID)))
 	if err != nil {
@@ -166,7 +166,7 @@ func (pack *PackReqRSAKey) Process(h *Handler, p *NetPackage) error {
 	return nil
 }
 
-//PackReqRecent
+// PackReqRecent
 func (pack *PackReqRecent) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {
@@ -189,7 +189,7 @@ func (pack *PackReqRecent) Process(h *Handler, p *NetPackage) error {
 	return nil
 }
 
-//PackCount
+// PackCount
 func (pack *PackCount) Process(h *Handler, p *NetPackage) error {
 
 	if h.Status != LOGINED {

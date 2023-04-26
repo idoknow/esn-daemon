@@ -22,7 +22,7 @@ type Handler struct {
 	PrivateKey string
 }
 
-//status of handler
+// status of handler
 const (
 	ESTABLISHED = iota
 	LOGINED
@@ -101,7 +101,7 @@ func (h *Handler) Handle() {
 	}
 }
 
-//Dispose this handler and unregister
+// Dispose this handler and unregister
 func (h *Handler) Dispose() {
 	HandlersLock.Lock()
 
