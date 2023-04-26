@@ -43,7 +43,7 @@ func Flush() {
 	defer buffer.Reset()
 }
 
-//Get timeStamp string as MM-DD,HH:mm:ss
+// Get timeStamp string as MM-DD,HH:mm:ss
 func getNowTimeStr() string {
 	t := time.Now()
 	return strconv.Itoa(int(t.Month())) + "-" +
